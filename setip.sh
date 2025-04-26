@@ -6,10 +6,10 @@ echo "===> BLOX Parallel IP Setup Script"
 
 # Find aktive interfaces
 echo "Tilgængelige netværksinterfaces:"
-ip -o link show | awk -F': ' '{print $2}' | grep -v lo
+ip -o link show | awk -F': ' '{print $2}' | sed 's/@.*//g' | grep -v lo
 
 # Spørg hvilket interface vi skal bruge
-read -p "Indtast navnet på netværksinterfacet du vil bruge (f.eks. eth0@if22): " interface
+read -p "Indtast navnet på netværksinterfacet du vil bruge (f.eks. eth0): " interface
 
 # Spørg efter subnet og IP
 read -p "Indtast subnetnummer (eks. 20 for 192.168.20.x): " subnet
