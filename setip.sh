@@ -9,7 +9,7 @@ echo "Tilgængelige netværksinterfaces:"
 ip -o link show | awk -F': ' '{print $2}' | grep -v lo
 
 # Spørg hvilket interface vi skal bruge
-read -p "Indtast navnet på netværksinterfacet du vil bruge (f.eks. eth0): " interface
+read -p "Indtast navnet på netværksinterfacet du vil bruge (f.eks. eth0@if22): " interface
 
 # Spørg efter subnet og IP
 read -p "Indtast subnetnummer (eks. 20 for 192.168.20.x): " subnet
@@ -22,11 +22,11 @@ echo "Opsætter IP $NEW_IP på interface $interface..."
 
 # Fjern tidligere ekstra IP (hvis en gammel findes)
 echo "Fjerner tidligere ekstra IP på $interface (hvis nogen)..."
-sudo ip addr flush dev $interface label $interface:1 || true
+sudo ip addr flush dev $interface label ${interface}:1 || true
 
 # Tilføj den nye ekstra IP
 echo "Tilføjer IP $NEW_IP til $interface..."
-sudo ip addr add $NEW_IP/24 dev $interface label $interface:1
+sudo ip addr add $NEW_IP/24 dev $interface label ${interface}:1
 
 # Gem config til senere brug
 sudo mkdir -p /etc/blox/
@@ -39,11 +39,12 @@ echo "Opretter systemd service..."
 sudo tee /etc/systemd/system/blox-parallel-ip.service > /dev/null <<EOF
 [Unit]
 Description=BLOX Parallel IP Setup
-After=network.target
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/ip addr add $(cat /etc/blox/ip.conf)/24 dev $(cat /etc/blox/interface.conf) label $(cat /etc/blox/interface.conf):1
+ExecStart=/bin/bash -c "ip addr add \$(cat /etc/blox/ip.conf)/24 dev \$(cat /etc/blox/interface.conf) label \$(cat /etc/blox/interface.conf):1 || true"
 RemainAfterExit=yes
 
 [Install]
@@ -58,3 +59,4 @@ sudo systemctl restart blox-parallel-ip.service
 echo
 echo "✅ BLOX Parallel IP er nu sat op!"
 echo "🌐 Ny IP: $NEW_IP på interface $interface"
+echo "✅ IP vil automatisk blive sat op igen ved næste reboot."
