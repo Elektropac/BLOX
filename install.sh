@@ -4,6 +4,14 @@ set -e
 
 echo "===> BLOX Installer / Reset Script"
 
+# Funktion til at hente filer og gøre dem eksekverbare
+hent_og_gør_eksekverbar() {
+    fil="$1"
+    echo "Henter og klargør $fil..."
+    curl -O "https://raw.githubusercontent.com/Elektropac/BLOX/main/$fil"
+    chmod +x "$fil"
+}
+
 # Stop and disable previous service if exists
 echo "Stopper gammel BLOX service (hvis eksisterende)..."
 sudo systemctl stop blox-webui.service || true
@@ -26,17 +34,17 @@ sudo rm -rf /opt/blox-webui
 echo "Kloner nyeste BLOX-projekt fra GitHub..."
 sudo git clone https://github.com/Elektropac/BLOX.git /opt/blox-webui
 
-# Generate SSL cert if not exists
+# Generate SSL cert
 echo "Opretter SSL-certifikat..."
 sudo mkdir -p /opt/blox-webui/certs
 cd /opt/blox-webui/certs
 sudo openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=blox.local"
 
-# Set correct permissions so Flask kan læse certs
+# Set correct permissions
 sudo chown -R $USER:$USER /opt/blox-webui/certs
 
 # Create systemd service
-echo "Opretter systemd service for BLOX..."
+echo "Opretter systemd service for BLOX Web UI..."
 
 sudo tee /etc/systemd/system/blox-webui.service > /dev/null <<EOF
 [Unit]
@@ -58,9 +66,8 @@ sudo systemctl daemon-reload
 sudo systemctl enable blox-webui.service
 sudo systemctl start blox-webui.service
 
-# Opret /usr/local/bin/blox-reset kommando
+# Hent og opsæt blox-reset genvej
 echo "Opretter 'blox-reset' genvej..."
-
 sudo tee /usr/local/bin/blox-reset > /dev/null <<EOF
 #!/bin/bash
 rm -f install.sh
@@ -71,14 +78,18 @@ EOF
 
 sudo chmod +x /usr/local/bin/blox-reset
 
-echo
-echo "✅ 'blox-reset' kommando er klar! Du kan nu skrive 'blox-reset' for at gendanne alt."
+# Hent setip.sh
+echo "Henter 'setip.sh' script..."
+cd ~
+hent_og_gør_eksekverbar setip.sh
 
+echo
 # Find IP-adresse automatisk
 IP=$(hostname -I | awk '{print $1}')
 
-echo
 echo "✅ BLOX Web UI kører nu!"
 echo "🌐 HTTP adgang:  http://$IP:5000"
 echo "🔒 HTTPS adgang: https://$IP:5001"
-echo "⚠️  OBS: Første gang skal du måske acceptere self-signed certifikat i browseren."
+echo "⚡ Parallel IP Setup script er klar: ~/setip.sh"
+echo "✅ Du kan altid køre 'blox-reset' for at starte forfra!"
+echo "✅ Husk at acceptere self-signed certifikat i browseren første gang."
