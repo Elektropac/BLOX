@@ -49,6 +49,22 @@ sudo systemctl daemon-reload
 sudo systemctl enable blox-webui.service
 sudo systemctl start blox-webui.service
 
+# Opret /usr/local/bin/blox-reset kommando
+echo "Opretter 'blox-reset' genvej..."
+
+sudo tee /usr/local/bin/blox-reset > /dev/null <<EOF
+#!/bin/bash
+curl -O https://raw.githubusercontent.com/Elektropac/BLOX/main/install.sh
+chmod +x install.sh
+./install.sh
+EOF
+
+sudo chmod +x /usr/local/bin/blox-reset
+
+echo
+echo "✅ 'blox-reset' kommando er klar! Du kan nu skrive 'blox-reset' for at gendanne alt."
+
+
 # Find IP-adresse automatisk
 IP=$(hostname -I | awk '{print $1}')
 
