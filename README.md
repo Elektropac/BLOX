@@ -11,10 +11,8 @@ Dette repository indeholder scripts til hurtigt at installere, konfigurere og ve
 Installation
 For at installere eller gendanne BLOX Web UI, kør følgende kommando på din enhed:
 
-bash
-Kopiér
-Rediger
 curl -O https://raw.githubusercontent.com/Elektropac/BLOX/main/install.sh && chmod +x install.sh && ./install.sh
+
 Dette vil:
 
 Installere nødvendige pakker (Python, Flask, Git, OpenSSL)
@@ -32,19 +30,15 @@ Hente ekstra værktøjer som setip.sh
 BLOX Reset
 Efter installation kan du til enhver tid gendanne BLOX ved at køre:
 
-bash
-Kopiér
-Rediger
 blox-reset
+
 Dette henter og kører en frisk version af install.sh, så systemet sættes tilbage til start.
 
 Parallel IP Setup (setip.sh)
 For at opsætte et parallelt netværk (en ekstra IP-adresse) på din BLOX-enhed, brug:
 
-bash
-Kopiér
-Rediger
 sudo ./setip.sh
+
 Dette script vil:
 
 Vise alle tilgængelige netværksinterfaces
@@ -60,15 +54,13 @@ Opsætte en ekstra IP-adresse på enheden
 Oprette en systemd-service så IP'en automatisk genskabes efter genstart
 
 Eksempel på brug
-bash
-Kopiér
-Rediger
 sudo ./setip.sh
-# Vælg interface: eth0
-# Vælg subnet: 20
-# Vælg IP: 114
+Vælg interface: eth0
+Vælg subnet: 20
+Vælg IP: 114
 
-# Resultat: 192.168.20.114 tilføjes som ekstra IP på eth0
+Resultat: 192.168.20.114 tilføjes som ekstra IP på eth0
+
 Efterfølgende kan enheden tilgås både via den normale netværksadresse og den nye parallelle IP.
 
 Adgang til BLOX Web UI
@@ -82,4 +74,4 @@ BLOX systemet er designet til at være hurtigt at installere, tilpasse og resett
 
 Parallelle netværk gør det muligt at kommunikere direkte mellem enheder på specialiserede subnets.
 
-🚀 BLOX gør opsætning og vedligeholdelse af dine enheder nemt og fleksibelt.
+
