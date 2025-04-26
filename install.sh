@@ -49,4 +49,9 @@ sudo systemctl daemon-reload
 sudo systemctl enable blox-webui.service
 sudo systemctl start blox-webui.service
 
-echo "===> BLOX Web UI er nu installeret og kører!"
+# Find IP-adresse automatisk
+IP=$(hostname -I | awk '{print $1}')
+
+echo
+echo "✅ BLOX Web UI kører nu!"
+echo "🌐 Åbn din browser på: http://$IP:5000"
