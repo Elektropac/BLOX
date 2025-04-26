@@ -32,6 +32,9 @@ sudo mkdir -p /opt/blox-webui/certs
 cd /opt/blox-webui/certs
 sudo openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=blox.local"
 
+# Set correct permissions so Flask kan læse certs
+sudo chown -R $USER:$USER /opt/blox-webui/certs
+
 # Create systemd service
 echo "Opretter systemd service for BLOX..."
 
@@ -76,5 +79,6 @@ IP=$(hostname -I | awk '{print $1}')
 
 echo
 echo "✅ BLOX Web UI kører nu!"
-echo "🌐 Åbn din browser på: https://$IP:5000"
-echo "⚠️  OBS: Du skal muligvis acceptere en usikker SSL-forbindelse første gang (self-signed certifikat)."
+echo "🌐 HTTP adgang:  http://$IP:5000"
+echo "🔒 HTTPS adgang: https://$IP:5001"
+echo "⚠️  OBS: Første gang skal du måske acceptere self-signed certifikat i browseren."
