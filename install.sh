@@ -12,7 +12,7 @@ sudo systemctl disable blox-webui.service || true
 # Update and install required packages
 echo "Opdaterer pakker..."
 sudo apt update
-sudo apt install -y python3 python3-pip git
+sudo apt install -y python3 python3-pip git openssl
 
 # Install Flask
 echo "Installerer Flask hvis nødvendigt..."
@@ -25,6 +25,12 @@ sudo rm -rf /opt/blox-webui
 # Clone new repo
 echo "Kloner nyeste BLOX-projekt fra GitHub..."
 sudo git clone https://github.com/Elektropac/BLOX.git /opt/blox-webui
+
+# Generate SSL cert if not exists
+echo "Opretter SSL-certifikat..."
+sudo mkdir -p /opt/blox-webui/certs
+cd /opt/blox-webui/certs
+sudo openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=blox.local"
 
 # Create systemd service
 echo "Opretter systemd service for BLOX..."
@@ -70,4 +76,5 @@ IP=$(hostname -I | awk '{print $1}')
 
 echo
 echo "✅ BLOX Web UI kører nu!"
-echo "🌐 Åbn din browser på: http://$IP:5000"
+echo "🌐 Åbn din browser på: https://$IP:5000"
+echo "⚠️  OBS: Du skal muligvis acceptere en usikker SSL-forbindelse første gang (self-signed certifikat)."
