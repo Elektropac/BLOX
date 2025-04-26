@@ -78,10 +78,24 @@ EOF
 
 sudo chmod +x /usr/local/bin/blox-reset
 
-# Hent setip.sh
+# Hent setip.sh til hjemmemappen
 echo "Henter 'setip.sh' script..."
 cd ~
 hent_og_gør_eksekverbar setip.sh
+
+# Hent ekstra hjælpe-scripts til hjemmemappen
+echo "Henter ekstra scripts til ~/ ..."
+
+cd ~
+
+# Liste over ekstra scripts
+scripts=("blox_welcome.sh")  # Tilføj flere navne her hvis du laver flere hjælpe-scripts senere
+
+for fil in "${scripts[@]}"; do
+    echo "Henter og klargør $fil..."
+    curl -O "https://raw.githubusercontent.com/Elektropac/BLOX/main/$fil"
+    chmod +x "$fil"
+done
 
 echo
 # Find IP-adresse automatisk
@@ -91,5 +105,6 @@ echo "✅ BLOX Web UI kører nu!"
 echo "🌐 HTTP adgang:  http://$IP:5000"
 echo "🔒 HTTPS adgang: https://$IP:5001"
 echo "⚡ Parallel IP Setup script er klar: ~/setip.sh"
+echo "🛠️ Hjælpescripts (fx blox_welcome.sh) ligger i ~/"
 echo "✅ Du kan altid køre 'blox-reset' for at starte forfra!"
 echo "✅ Husk at acceptere self-signed certifikat i browseren første gang."
