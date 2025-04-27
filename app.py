@@ -16,12 +16,25 @@ def index():
 def send_fake_data():
     while True:
         socketio.emit('unit_data', {
-            'unit': 'Blox 21',
-            'Ip': '192.168.20.50',
-            'Temp': f'{24 + (time.time() % 5):.2f}',
-            'Liter': f'{100 + (time.time() % 50):.2f}'
+            'unit': 'blox1',
+            'ip': '192.168.1.10',
+            'temp': f'{24 + (time.time() % 5):.2f}',
+            'liter': f'{100 + (time.time() % 50):.2f}'
+        })
+        socketio.emit('unit_data', {
+            'unit': 'blox2',
+            'ip': '192.168.1.11',
+            'temp': f'{20 + (time.time() % 5):.2f}',
+            'liter': f'{90 + (time.time() % 30):.2f}'
+        })
+        socketio.emit('unit_data', {
+            'unit': 'blox3',
+            'ip': '192.168.1.12',
+            'temp': f'{22 + (time.time() % 5):.2f}',
+            'liter': f'{85 + (time.time() % 40):.2f}'
         })
         time.sleep(3)
+
 
 if __name__ == '__main__':
     # Start fake data i baggrund
