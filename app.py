@@ -81,7 +81,8 @@ if __name__ == '__main__':
     if is_master:
         print(f"[MASTER] Jeg er Blox 0 på IP {own_ip}")
         threading.Thread(target=send_own_data_master, daemon=True).start()
-        socketio.run(app, host='0.0.0.0', port=5000, ssl_context=('/opt/blox-webui/certs/cert.pem', '/opt/blox-webui/certs/key.pem'), allow_unsafe_werkzeug=True)
+        socketio.run(app, host='0.0.0.0', port=5000, allow_unsafe_werkzeug=True)
+#        socketio.run(app, host='0.0.0.0', port=5000, ssl_context=('/opt/blox-webui/certs/cert.pem', '/opt/blox-webui/certs/key.pem'), allow_unsafe_werkzeug=True)
     else:
         print(f"[CLIENT] Jeg er Blox {own_id} på IP {own_ip}, sender til {master_ip}")
         threading.Thread(target=send_data_to_master, daemon=True).start()
