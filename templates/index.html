@@ -1,12 +1,168 @@
 <!DOCTYPE html>
-<html lang="da">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>BLOX Setup Portal</title>
-    <link rel="stylesheet" href="/static/css/style.css">
+<meta charset="UTF-8">
+<title>Enhedsoverblik</title>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<style>
+/* ----- Styling til hele siden ----- */
+body {
+    font-family: Arial, sans-serif;
+    background: #eef2f7;
+    margin: 0;
+    padding: 20px;
+}
+
+/* Container for alle enheder */
+#units-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+/* Enkelt enhedsboks */
+.unit-box {
+    background-color: #ffffff;
+    border: 1px solid #ccc;
+    border-radius: 16px;
+    padding: 16px;
+    width: 250px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+
+.unit-box:hover {
+    transform: scale(1.02);
+}
+
+/* Overskrift */
+.unit-header {
+    font-size: 1.5em;
+    margin-bottom: 8px;
+    color: #333;
+}
+
+/* Data-område */
+.unit-data {
+    font-size: 1em;
+    color: #555;
+}
+
+/* Enkel datalinje */
+.unit-line {
+    margin: 4px 0;
+}
+
+/* Statusbadge */
+.status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 0.8em;
+    color: white;
+    margin-bottom: 8px;
+}
+
+.online {
+    background-color: #4CAF50;
+}
+
+.offline {
+    background-color: #f44336;
+}
+</style>
 </head>
 <body>
-    <h1>BLOX Setup Portal</h1>
-    <p>✅ Alt kører som det skal!</p>
+
+<h1>Enhedsoverblik</h1>
+<div id="units-container"></div>
+
+<script>
+// ----- Modul: UnitBox -----
+class UnitBox {
+    constructor(unitId) {
+        this.unitId = unitId;
+        this.createBox();
+    }
+
+    createBox() {
+        this.box = document.createElement('div');
+        this.box.className = 'unit-box';
+        this.box.id = this.unitId;
+
+        // Header (titel)
+        this.header = document.createElement('h2');
+        this.header.className = 'unit-header';
+        this.header.innerText = this.unitId;
+        this.box.appendChild(this.header);
+
+        // Statusbadge
+        this.status = document.createElement('div');
+        this.status.className = 'status-badge offline';
+        this.status.innerText = 'Offline';
+        this.box.appendChild(this.status);
+
+        // Container for data
+        this.dataContainer = document.createElement('div');
+        this.dataContainer.className = 'unit-data';
+        this.box.appendChild(this.dataContainer);
+
+        // Tilføj til hovedcontainer
+        document.getElementById('units-container').appendChild(this.box);
+    }
+
+    update(data) {
+        // Skift status til online
+        this.status.innerText = 'Online';
+        this.status.className = 'status-badge online';
+
+        // Opdater data
+        this.dataContainer.innerHTML = '';
+        for (const key in data) {
+            if (key !== 'unit') {
+                const p = document.createElement('p');
+                p.className = 'unit-line';
+                p.innerHTML = `<strong>${key}:</strong> ${data[key]}`;
+                this.dataContainer.appendChild(p);
+            }
+        }
+    }
+
+    setOffline() {
+        this.status.innerText = 'Offline';
+        this.status.className = 'status-badge offline';
+    }
+}
+
+// ----- Controller til enheder -----
+const unitBoxes = {};
+const lastSeen = {}; // Tidsstempel for sidste data
+
+const socket = io();
+
+// Modtag data
+socket.on('unit_data', (data) => {
+    const unitId = data.unit;
+    if (!unitBoxes[unitId]) {
+        unitBoxes[unitId] = new UnitBox(unitId);
+    }
+    unitBoxes[unitId].update(data);
+    lastSeen[unitId] = Date.now();
+});
+
+// Tjek offline status hvert 5. sekund
+setInterval(() => {
+    const now = Date.now();
+    for (const unitId in lastSeen) {
+        if (now - lastSeen[unitId] > 10000) { // Hvis ingen data i 10 sekunder
+            if (unitBoxes[unitId]) {
+                unitBoxes[unitId].setOffline();
+            }
+        }
+    }
+}, 5000);
+
+</script>
+
 </body>
 </html>
