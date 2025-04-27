@@ -17,7 +17,7 @@ def send_fake_data():
     while True:
         socketio.emit('unit_data', {
             'unit': 'blox1',
-            'ip': '192.168.1.10',
+            'ip': '192.168.20.50',
             'temp': f'{24 + (time.time() % 5):.2f}',
             'liter': f'{100 + (time.time() % 50):.2f}'
         })
