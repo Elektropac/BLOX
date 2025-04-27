@@ -28,4 +28,5 @@ if __name__ == '__main__':
     threading.Thread(target=send_fake_data, daemon=True).start()
 
     # Start SocketIO server (HTTP eller HTTPS)
-    socketio.run(app, host='0.0.0.0', port=5000, ssl_context=('cert.pem', 'key.pem'), allow_unsafe_werkzeug=True)
+    socketio.run(app, host='0.0.0.0', port=5000, ssl_context=('/opt/blox-webui/certs/cert.pem', '/opt/blox-webui/certs/key.pem'), allow_unsafe_werkzeug=True)
+
