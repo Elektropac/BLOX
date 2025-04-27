@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO
-import socket
 import time
 import threading
 import requests
@@ -89,17 +88,16 @@ if __name__ == '__main__':
         last_octet = int(blox_ip.split('.')[-1])
         if last_octet == 254:
             # Vi er MASTER
-            print(f"[MASTER] Jeg er Blox 0 på {blox_ip}")
+            print(f"[MASTER] Jeg er Blox 0 på IP {blox_ip}")
             threading.Thread(target=send_own_data_master, args=(blox_ip,), daemon=True).start()
             socketio.run(app, host='0.0.0.0', port=5000, allow_unsafe_werkzeug=True)
         else:
             # Vi er CLIENT
-            print(f"[CLIENT] Jeg er Blox {last_octet} på {blox_ip}")
+            print(f"[CLIENT] Jeg er Blox {last_octet} på IP {blox_ip}")
             master_ip = blox_ip.rsplit('.', 1)[0] + '.254'
             threading.Thread(target=send_data_to_master, args=(master_ip, last_octet, blox_ip), daemon=True).start()
 
-            # Client skal IKKE starte egen server - hold bare tråden i gang
-            while True:
-                time.sleep(60)
+            # Kør en dummy Flask-app så SocketIO eksisterer
+            app.run(host='0.0.0.0', port=5000)
     else:
-        print("[FEJL] Ingen BLOX-netværk fundet. Check netværk og IP-indstillinger.")
+        print("[FEJL] Ingen gyldig BLOX-subnet fundet. Check IP-adresser og netværk.")
