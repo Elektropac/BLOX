@@ -16,10 +16,10 @@ def index():
 def send_fake_data():
     while True:
         socketio.emit('unit_data', {
-            'unit': 'blox1',
-            'ip': '192.168.20.50',
-            'temp': f'{24 + (time.time() % 5):.2f}',
-            'liter': f'{100 + (time.time() % 50):.2f}'
+            'unit': 'Blox 1',
+            'Ip': '192.168.20.50',
+            'Temp': f'{24 + (time.time() % 5):.2f}',
+            'Liter': f'{100 + (time.time() % 50):.2f}'
         })
         time.sleep(3)
 
