@@ -1,5 +1,7 @@
 to use this
 
+(sudo systemctl status blox-webui)
+
 install curl and run:
 
 BLOX Setup
