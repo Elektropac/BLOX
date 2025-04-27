@@ -31,5 +31,6 @@ if __name__ == '__main__':
         host='0.0.0.0',
         port=5000,
         debug=False,
-        ssl_context=('/opt/blox-webui/certs/cert.pem', '/opt/blox-webui/certs/key.pem')
+        ssl_context=('/opt/blox-webui/certs/cert.pem', '/opt/blox-webui/certs/key.pem'),
+        allow_unsafe_werkzeug=True
     )
