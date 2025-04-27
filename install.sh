@@ -1,12 +1,28 @@
 #!/bin/bash
 set -e
 
-echo "===> BLOX Installer / Reset Script"
-
+# === BLOX Installer / Reset Script ===
 BRANCH="${1:-main}"
-echo "👉 Bruger branch: $BRANCH"
 
-# Funktion: hent script
+echo "===> BLOX Installer / Reset Script"
+echo "👉 Bruger branch: $BRANCH"
+echo
+
+# --- SELF-REFRESH: Sikrer vi altid bruger nyeste version ---
+if [[ "$SELF_REFRESH_DONE" != "yes" ]]; then
+    echo "🔄 Henter nyeste version af install.sh fra GitHub ($BRANCH branch)..."
+    rm -f install.sh
+    curl -O https://raw.githubusercontent.com/Elektropac/BLOX/$BRANCH/install.sh
+    chmod +x install.sh
+    echo "✅ Nyeste install.sh hentet!"
+    echo
+    echo "🚀 Starter opdateret install.sh..."
+    export SELF_REFRESH_DONE="yes"
+    exec sudo ./install.sh "$BRANCH"
+    exit 0
+fi
+
+# --- Funktion: hent hjælpe-scripts ---
 hent_og_gør_eksekverbar() {
     fil="$1"
     echo "Henter og klargør $fil..."
@@ -14,50 +30,48 @@ hent_og_gør_eksekverbar() {
     chmod +x "$fil"
 }
 
-# Stop gammelt WebUI
+# --- STOP gammel service ---
 echo "🛑 Stopper gammel BLOX service (hvis eksisterende)..."
 sudo systemctl stop blox-webui.service || true
 sudo systemctl disable blox-webui.service || true
 
-# Opdater pakker
+# --- PAKKEINSTALLATION ---
 echo "🔧 Opdaterer pakker og installerer nødvendige Python-pakker..."
 sudo apt update
 sudo apt install -y python3 python3-pip git openssl python3-requests python3-netifaces curl
 
-# Installer Flask, SocketIO
 echo "📦 Installerer Flask, Flask-SocketIO og Eventlet..."
 sudo pip3 install flask flask-socketio eventlet || true
 
-# Slet gammel mappe
+# --- SLET gammel mappe ---
 echo "🧹 Sletter gammel BLOX-mappe hvis den findes..."
 sudo rm -rf /opt/blox-webui
 
-# Klon BLOX repo
+# --- KLON BLOX PROJEKT ---
 echo "📥 Kloner BLOX projekt fra GitHub..."
 sudo git clone --branch "$BRANCH" https://github.com/Elektropac/BLOX.git /opt/blox-webui
 
-# Opret SSL cert
+# --- SSL CERTIFIKAT ---
 echo "🔒 Opretter SSL-certifikat..."
 sudo mkdir -p /opt/blox-webui/certs
 cd /opt/blox-webui/certs
 sudo openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=blox.local"
-
-# Permissions
 sudo chown -R $USER:$USER /opt/blox-webui/certs
 
-# --- NYT: Spørg om vi skal lave ny MAC ---
+# --- MAC-OPSÆTNING ---
+echo
 read -p "🔄 Vil du generere en ny MAC-adresse for denne BLOX? (y/n) " svaret
 if [[ "$svaret" == "y" ]]; then
     echo "🔧 Genererer ny MAC-adresse..."
-    # Lav en random MAC (starter altid med 02:12:34)
     HEX1=$(printf '%02X' $((RANDOM % 256)))
     HEX2=$(printf '%02X' $((RANDOM % 256)))
     HEX3=$(printf '%02X' $((RANDOM % 256)))
     NY_MAC="02:12:34:$HEX1:$HEX2:$HEX3"
     echo "$NY_MAC" | sudo tee /etc/blox-mac.conf
     echo "✅ MAC-adresse sat til $NY_MAC"
+    echo
 
-    # Lav systemd service
+    # Opret systemd service til MAC
     sudo tee /etc/systemd/system/blox-mac.service > /dev/null <<EOF
 [Unit]
 Description=BLOX - Sæt fast MAC på eth0
@@ -80,7 +94,7 @@ EOF
     sudo systemctl enable blox-mac.service
 fi
 
-# Opret systemd service til WebUI
+# --- SYSTEMD SERVICE BLOX WEBUI ---
 echo "🛠️ Opretter systemd service for BLOX Web UI..."
 sudo tee /etc/systemd/system/blox-webui.service > /dev/null <<EOF
 [Unit]
@@ -102,7 +116,7 @@ sudo systemctl daemon-reload
 sudo systemctl enable blox-webui.service
 sudo systemctl start blox-webui.service
 
-# Installer blox-reset genvej
+# --- BLOX-RESET ---
 echo "🔁 Opretter 'blox-reset' genvej..."
 sudo tee /usr/local/bin/blox-reset > /dev/null <<EOF
 #!/bin/bash
@@ -113,24 +127,30 @@ chmod +x install.sh
 EOF
 sudo chmod +x /usr/local/bin/blox-reset
 
-# Hent 'setip.sh' og hjælpe-scripts
+# --- HENT EKSTRA SCRIPTS ---
 echo "⚙️ Henter ekstra scripts..."
 cd ~
 hent_og_gør_eksekverbar setip.sh
-
 scripts=("blox_welcome.sh")
 for fil in "${scripts[@]}"; do
     hent_og_gør_eksekverbar "$fil"
 done
 
-# Find IP
+# --- VIS IP ---
 IP=$(hostname -I | awk '{print $1}')
 
 echo
-echo "✅ BLOX Web UI kører nu!"
+echo "✅ BLOX Web UI installation færdig!"
 echo "🌐 HTTP adgang:  http://$IP:5000"
 echo "🔒 HTTPS adgang: https://$IP:5001"
 echo "⚡ Parallel IP Setup script er klar: ~/setip.sh"
 echo "🛠️ Hjælpescripts (fx blox_welcome.sh) ligger i ~/"
+echo
 echo "✅ Du kan altid køre 'blox-reset' for at starte forfra!"
 echo "✅ Husk at acceptere self-signed certifikat i browseren første gang."
+echo
+
+# --- AUTO-REBOOT ---
+echo "⚠️ BLOX genstarter automatisk om 10 sekunder for at aktivere ny MAC og netværk..."
+sleep 10
+sudo reboot
