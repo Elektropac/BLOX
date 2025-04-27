@@ -27,9 +27,9 @@ echo "Opdaterer pakker..."
 sudo apt update
 sudo apt install -y python3 python3-pip git openssl
 
-# Install Flask
-echo "Installerer Flask hvis nødvendigt..."
-pip3 install flask || true
+# Install Flask og SocketIO
+echo "Installerer Flask og SocketIO hvis nødvendigt..."
+sudo pip3 install flask flask-socketio eventlet || true
 
 # Remove old folder
 echo "Sletter gammel BLOX-mappe hvis den findes..."
