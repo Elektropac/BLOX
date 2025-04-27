@@ -1,18 +1,35 @@
 from flask import Flask, render_template
+from flask_socketio import SocketIO
+import time
 import threading
 
 app = Flask(__name__)
+socketio = SocketIO(app)
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
-def run_http():
-    app.run(host='0.0.0.0', port=5000, debug=False)
-
-def run_https():
-    app.run(host='0.0.0.0', port=5001, debug=False, ssl_context=('/opt/blox-webui/certs/cert.pem', '/opt/blox-webui/certs/key.pem'))
+# Fake data udsender
+def send_fake_data():
+    while True:
+        socketio.emit('unit_data', {
+            'unit': 'blox1',
+            'ip': '192.168.1.10',
+            'temp': f'{24 + (time.time() % 5):.2f}',
+            'liter': f'{100 + (time.time() % 50):.2f}'
+        })
+        time.sleep(3)
 
 if __name__ == '__main__':
-    threading.Thread(target=run_http).start()
-    threading.Thread(target=run_https).start()
+    # Start fake data i baggrund
+    threading.Thread(target=send_fake_data, daemon=True).start()
+
+    # Start SocketIO server (HTTP eller HTTPS)
+    socketio.run(
+        app,
+        host='0.0.0.0',
+        port=5000,
+        debug=False,
+        ssl_context=('/opt/blox-webui/certs/cert.pem', '/opt/blox-webui/certs/key.pem')
+    )
