@@ -48,7 +48,62 @@ sudo openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 
 # Set correct permissions
 sudo chown -R $USER:$USER /opt/blox-webui/certs
 
-# Create systemd service
+# MAC-setup: Spørg om ny MAC
+MAC_FILE="/opt/blox-webui/.macaddr"
+
+if [ -f "$MAC_FILE" ]; then
+    echo "🔎 En eksisterende MAC-adresse blev fundet: $(cat $MAC_FILE)"
+    read -p "❓ Vil du genbruge den gamle MAC? (y/n): " valg
+    if [ "$valg" != "y" ]; then
+        echo "♻️ Genererer ny MAC-adresse..."
+        rm "$MAC_FILE"
+    else
+        echo "✅ Genbruger eksisterende MAC."
+    fi
+fi
+
+# Opretter MAC-setup script
+echo "🛠️ Opretter set-mac script..."
+sudo tee /opt/blox-webui/set-mac.sh > /dev/null <<'EOF'
+#!/bin/bash
+MAC_FILE="/opt/blox-webui/.macaddr"
+if [ ! -f "$MAC_FILE" ]; then
+    echo "[SET-MAC] Ingen MAC-fil fundet. Genererer ny MAC..."
+    MAC_ADDR=$(printf '02:%02x:%02x:%02x:%02x:%02x' $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)))
+    echo "$MAC_ADDR" > "$MAC_FILE"
+else
+    MAC_ADDR=$(cat "$MAC_FILE")
+    echo "[SET-MAC] Bruger eksisterende MAC: $MAC_ADDR"
+fi
+ip link set dev eth0 down
+ip link set dev eth0 address $MAC_ADDR
+ip link set dev eth0 up
+EOF
+
+sudo chmod +x /opt/blox-webui/set-mac.sh
+
+# Opretter systemd service for MAC-setup
+echo "🛠️ Opretter set-mac systemd service..."
+sudo tee /etc/systemd/system/set-mac.service > /dev/null <<EOF
+[Unit]
+Description=Set custom MAC address for eth0
+After=network-pre.target
+Before=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/blox-webui/set-mac.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Aktiver MAC-setup service
+sudo systemctl daemon-reload
+sudo systemctl enable set-mac.service
+
+# Create systemd service for WebUI
 echo "🛠️ Opretter systemd service for BLOX Web UI..."
 
 sudo tee /etc/systemd/system/blox-webui.service > /dev/null <<EOF
@@ -67,8 +122,8 @@ RestartSec=2
 WantedBy=multi-user.target
 EOF
 
-# Reload systemd, enable and start service
-echo "🔄 Genindlæser systemd, aktiverer og starter service..."
+# Reload systemd, enable and start WebUI service
+echo "🔄 Genindlæser systemd, aktiverer og starter BLOX Web UI..."
 sudo systemctl daemon-reload
 sudo systemctl enable blox-webui.service
 sudo systemctl start blox-webui.service
@@ -95,7 +150,6 @@ echo "🧩 Henter ekstra hjælpe-scripts..."
 
 cd ~
 
-# Liste over ekstra scripts
 scripts=("blox_welcome.sh")  # Tilføj flere her senere hvis nødvendigt
 
 for fil in "${scripts[@]}"; do
