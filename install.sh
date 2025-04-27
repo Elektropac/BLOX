@@ -48,41 +48,49 @@ sudo openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 
 # Set correct permissions
 sudo chown -R $USER:$USER /opt/blox-webui/certs
 
-# MAC-setup: Spørg om ny MAC
+# --- MAC-adresse håndtering ---
 MAC_FILE="/opt/blox-webui/.macaddr"
 
-if [ -f "$MAC_FILE" ]; then
-    echo "🔎 En eksisterende MAC-adresse blev fundet: $(cat $MAC_FILE)"
-    read -p "❓ Vil du genbruge den gamle MAC? (y/n): " valg
-    if [ "$valg" != "y" ]; then
-        echo "♻️ Genererer ny MAC-adresse..."
-        rm "$MAC_FILE"
-    else
-        echo "✅ Genbruger eksisterende MAC."
-    fi
+# Sørg for mappen findes
+sudo mkdir -p /opt/blox-webui
+
+# Hvis ingen mac-fil, generer én
+if [ ! -f "$MAC_FILE" ]; then
+    echo "⚡ Ingen eksisterende MAC-adresse fundet. Genererer en nu..."
+    MAC_ADDR=$(printf '02:%02x:%02x:%02x:%02x:%02x' $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)))
+    echo "$MAC_ADDR" | sudo tee "$MAC_FILE" > /dev/null
 fi
 
-# Opretter MAC-setup script
-echo "🛠️ Opretter set-mac script..."
+# Nu spørg om vi vil beholde eller lave ny
+echo "🔎 Fundet MAC-adresse: $(cat $MAC_FILE)"
+read -p "❓ Vil du genbruge denne MAC? (y/n): " valg
+if [ "$valg" != "y" ]; then
+    echo "♻️ Genererer ny MAC-adresse..."
+    MAC_ADDR=$(printf '02:%02x:%02x:%02x:%02x:%02x' $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)))
+    echo "$MAC_ADDR" | sudo tee "$MAC_FILE" > /dev/null
+else
+    echo "✅ Genbruger eksisterende MAC."
+fi
+
+# Opretter set-mac.sh script
+echo "🛠️ Opretter set-mac.sh..."
 sudo tee /opt/blox-webui/set-mac.sh > /dev/null <<'EOF'
 #!/bin/bash
 MAC_FILE="/opt/blox-webui/.macaddr"
-if [ ! -f "$MAC_FILE" ]; then
-    echo "[SET-MAC] Ingen MAC-fil fundet. Genererer ny MAC..."
-    MAC_ADDR=$(printf '02:%02x:%02x:%02x:%02x:%02x' $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)))
-    echo "$MAC_ADDR" > "$MAC_FILE"
-else
+if [ -f "$MAC_FILE" ]; then
     MAC_ADDR=$(cat "$MAC_FILE")
-    echo "[SET-MAC] Bruger eksisterende MAC: $MAC_ADDR"
+    echo "[SET-MAC] Sætter MAC: $MAC_ADDR"
+    ip link set dev eth0 down
+    ip link set dev eth0 address $MAC_ADDR
+    ip link set dev eth0 up
+else
+    echo "[SET-MAC] Ingen MAC-fil fundet! Bruger standard MAC."
 fi
-ip link set dev eth0 down
-ip link set dev eth0 address $MAC_ADDR
-ip link set dev eth0 up
 EOF
 
 sudo chmod +x /opt/blox-webui/set-mac.sh
 
-# Opretter systemd service for MAC-setup
+# Opretter systemd service til set-mac
 echo "🛠️ Opretter set-mac systemd service..."
 sudo tee /etc/systemd/system/set-mac.service > /dev/null <<EOF
 [Unit]
@@ -99,13 +107,11 @@ RemainAfterExit=yes
 WantedBy=multi-user.target
 EOF
 
-# Aktiver MAC-setup service
 sudo systemctl daemon-reload
 sudo systemctl enable set-mac.service
 
-# Create systemd service for WebUI
-echo "🛠️ Opretter systemd service for BLOX Web UI..."
-
+# Opretter BLOX WebUI service
+echo "🛠️ Opretter BLOX Web UI service..."
 sudo tee /etc/systemd/system/blox-webui.service > /dev/null <<EOF
 [Unit]
 Description=BLOX Web UI Flask Server
@@ -122,13 +128,11 @@ RestartSec=2
 WantedBy=multi-user.target
 EOF
 
-# Reload systemd, enable and start WebUI service
-echo "🔄 Genindlæser systemd, aktiverer og starter BLOX Web UI..."
 sudo systemctl daemon-reload
 sudo systemctl enable blox-webui.service
 sudo systemctl start blox-webui.service
 
-# Hent og opsæt blox-reset genvej
+# Opretter blox-reset
 echo "🔁 Opretter 'blox-reset' genvej..."
 sudo tee /usr/local/bin/blox-reset > /dev/null <<EOF
 #!/bin/bash
@@ -140,25 +144,20 @@ EOF
 
 sudo chmod +x /usr/local/bin/blox-reset
 
-# Hent setip.sh til hjemmemappen
+# Henter setip.sh
 echo "⚙️ Henter 'setip.sh' script..."
 cd ~
 hent_og_gør_eksekverbar setip.sh
 
-# Hent ekstra hjælpe-scripts
+# Henter hjælpe-scripts
 echo "🧩 Henter ekstra hjælpe-scripts..."
-
 cd ~
-
-scripts=("blox_welcome.sh")  # Tilføj flere her senere hvis nødvendigt
-
+scripts=("blox_welcome.sh")
 for fil in "${scripts[@]}"; do
-    echo "Henter og klargør $fil..."
-    curl -O "https://raw.githubusercontent.com/Elektropac/BLOX/$BRANCH/$fil"
-    chmod +x "$fil"
+    hent_og_gør_eksekverbar "$fil"
 done
 
-# Find IP-adresse automatisk
+# Find IP-adresse
 IP=$(hostname -I | awk '{print $1}')
 
 echo
