@@ -98,7 +98,8 @@ if __name__ == '__main__':
             master_ip = blox_ip.rsplit('.', 1)[0] + '.254'
             threading.Thread(target=send_data_to_master, args=(master_ip, last_octet, blox_ip), daemon=True).start()
 
-            # Kør en "tom" Flask-app så socketio kan eksistere
-            app.run(host='0.0.0.0', port=5000)
+            # Client skal IKKE starte egen server - hold bare tråden i gang
+            while True:
+                time.sleep(60)
     else:
         print("[FEJL] Ingen BLOX-netværk fundet. Check netværk og IP-indstillinger.")
