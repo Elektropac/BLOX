@@ -12,13 +12,13 @@ echo
 if [[ "$SELF_REFRESH_DONE" != "yes" ]]; then
     echo "🔄 Henter nyeste version af install.sh fra GitHub ($BRANCH branch)..."
     rm -f install.sh
-    curl -O https://raw.githubusercontent.com/Elektropac/BLOX/$BRANCH/install.sh
+    curl -k -O https://raw.githubusercontent.com/Elektropac/BLOX/$BRANCH/install.sh
     chmod +x install.sh
     echo "✅ Nyeste install.sh hentet!"
     echo
     echo "🚀 Starter opdateret install.sh..."
     export SELF_REFRESH_DONE="yes"
-    exec sudo ./install.sh "$BRANCH"
+    exec sudo SELF_REFRESH_DONE=yes ./install.sh "$BRANCH"
     exit 0
 fi
 
@@ -26,9 +26,20 @@ fi
 hent_og_gør_eksekverbar() {
     fil="$1"
     echo "Henter og klargør $fil..."
-    curl -O "https://raw.githubusercontent.com/Elektropac/BLOX/$BRANCH/$fil"
+    curl -k -O "https://raw.githubusercontent.com/Elektropac/BLOX/$BRANCH/$fil"
     chmod +x "$fil"
 }
+
+# --- OPRET BLOX BRUGER ---
+if id "blox" &>/dev/null; then
+    echo "👤 Bruger 'blox' findes allerede."
+else
+    echo "👤 Opretter ny bruger 'blox' med password 'blox'..."
+    sudo adduser blox --gecos "" --disabled-password
+    echo 'blox:blox' | sudo chpasswd
+    sudo usermod -aG sudo blox
+    echo "✅ Bruger 'blox' oprettet og tilføjet til sudoers."
+fi
 
 # --- STOP gammel service ---
 echo "🛑 Stopper gammel BLOX service (hvis eksisterende)..."
@@ -56,7 +67,7 @@ echo "🔒 Opretter SSL-certifikat..."
 sudo mkdir -p /opt/blox-webui/certs
 cd /opt/blox-webui/certs
 sudo openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=blox.local"
-sudo chown -R $USER:$USER /opt/blox-webui/certs
+sudo chown -R blox:blox /opt/blox-webui
 
 # --- MAC-OPSÆTNING ---
 echo
@@ -102,7 +113,7 @@ Description=BLOX Web UI Flask Server
 After=network.target
 
 [Service]
-User=$USER
+User=blox
 WorkingDirectory=/opt/blox-webui
 ExecStart=/usr/bin/python3 /opt/blox-webui/app.py
 Restart=always
@@ -121,7 +132,7 @@ echo "🔁 Opretter 'blox-reset' genvej..."
 sudo tee /usr/local/bin/blox-reset > /dev/null <<EOF
 #!/bin/bash
 rm -f install.sh
-curl -O https://raw.githubusercontent.com/Elektropac/BLOX/$BRANCH/install.sh
+curl -k -O https://raw.githubusercontent.com/Elektropac/BLOX/$BRANCH/install.sh
 chmod +x install.sh
 ./install.sh
 EOF
@@ -151,6 +162,6 @@ echo "✅ Husk at acceptere self-signed certifikat i browseren første gang."
 echo
 
 # --- AUTO-REBOOT ---
-echo "⚠️ BLOX genstarter automatisk om 10 sekunder for at aktivere ny MAC og netværk..."
+echo "⚠️ BLOX genstarter automatisk om 10 sekunder for at aktivere ny MAC, ny bruger og netværk..."
 sleep 10
 sudo reboot
