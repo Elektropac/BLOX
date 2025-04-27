@@ -4,11 +4,16 @@ set -e
 
 echo "===> BLOX Installer / Reset Script"
 
+# Hvis der gives en parameter, brug den som branch, ellers brug "main"
+BRANCH="${1:-main}"
+
+echo "👉 Bruger branch: $BRANCH"
+
 # Funktion til at hente filer og gøre dem eksekverbare
 hent_og_gør_eksekverbar() {
     fil="$1"
     echo "Henter og klargør $fil..."
-    curl -O "https://raw.githubusercontent.com/Elektropac/BLOX/main/$fil"
+    curl -O "https://raw.githubusercontent.com/Elektropac/BLOX/$BRANCH/$fil"
     chmod +x "$fil"
 }
 
@@ -32,7 +37,7 @@ sudo rm -rf /opt/blox-webui
 
 # Clone new repo
 echo "Kloner nyeste BLOX-projekt fra GitHub..."
-sudo git clone https://github.com/Elektropac/BLOX.git /opt/blox-webui
+sudo git clone --branch "$BRANCH" https://github.com/Elektropac/BLOX.git /opt/blox-webui
 
 # Generate SSL cert
 echo "Opretter SSL-certifikat..."
@@ -71,7 +76,7 @@ echo "Opretter 'blox-reset' genvej..."
 sudo tee /usr/local/bin/blox-reset > /dev/null <<EOF
 #!/bin/bash
 rm -f install.sh
-curl -O https://raw.githubusercontent.com/Elektropac/BLOX/main/install.sh
+curl -O https://raw.githubusercontent.com/Elektropac/BLOX/$BRANCH/install.sh
 chmod +x install.sh
 ./install.sh
 EOF
@@ -93,7 +98,7 @@ scripts=("blox_welcome.sh")  # Tilføj flere navne her hvis du laver flere hjæl
 
 for fil in "${scripts[@]}"; do
     echo "Henter og klargør $fil..."
-    curl -O "https://raw.githubusercontent.com/Elektropac/BLOX/main/$fil"
+    curl -O "https://raw.githubusercontent.com/Elektropac/BLOX/$BRANCH/$fil"
     chmod +x "$fil"
 done
 
