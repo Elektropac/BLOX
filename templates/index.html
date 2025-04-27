@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Enhedsoverblik</title>
+<title>BLOX Overblik</title>
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <style>
 /* ----- Styling til hele siden ----- */
@@ -70,11 +70,16 @@ body {
 .offline {
     background-color: #f44336;
 }
+
+/* Særligt for master (Blox 0) */
+.master-box {
+    border: 2px solid #2196F3; /* Blå kant */
+}
 </style>
 </head>
 <body>
 
-<h1>Enhedsoverblik</h1>
+<h1>BLOX Overblik</h1>
 <div id="units-container"></div>
 
 <script>
@@ -88,6 +93,9 @@ class UnitBox {
     createBox() {
         this.box = document.createElement('div');
         this.box.className = 'unit-box';
+        if (this.unitId === 'Blox 0') {
+            this.box.classList.add('master-box'); // Master får blå kant
+        }
         this.box.id = this.unitId;
 
         // Header (titel)
@@ -148,6 +156,7 @@ socket.on('unit_data', (data) => {
     }
     unitBoxes[unitId].update(data);
     lastSeen[unitId] = Date.now();
+    sortBoxes(); // <-- Sorter hver gang vi får nye data
 });
 
 // Tjek offline status hvert 5. sekund
@@ -162,6 +171,17 @@ setInterval(() => {
     }
 }, 5000);
 
+// Sorteringsfunktion
+function sortBoxes() {
+    const container = document.getElementById('units-container');
+    const boxes = Array.from(container.children);
+    boxes.sort((a, b) => {
+        const idA = parseInt(a.id.replace('Blox ', ''));
+        const idB = parseInt(b.id.replace('Blox ', ''));
+        return idA - idB;
+    });
+    boxes.forEach(box => container.appendChild(box));
+}
 </script>
 
 </body>
